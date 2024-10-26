@@ -96,7 +96,7 @@ public class AdamsProgressingCode extends LinearOpMode {
 
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
-            telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftPower, rightPower);
+            // telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftPower, rightPower);
 
             TelemetryPacket packet = new TelemetryPacket();
             packet.fieldOverlay().setStroke("#3F51B5");

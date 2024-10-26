@@ -3,27 +3,36 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.HardwareMap;
 
 public class Arm {
     // Counts per revolution
     final double CPR = 28;
-    private static DcMotor rotationalMotor = null;
+    public static DcMotor rotationalMotor = null;
     public static DcMotor extendMotor = null;
     private static Arm instance = null;
 
-    public static Arm getInstance() {
-        return instance = instance == null ? new Arm() : instance;
+    public static Arm getInstance(HardwareMap hMap) {
+        return instance = instance == null ? new Arm(hMap) : instance;
     }
 
-    private Arm() {
-        //rotationalMotor = hardwareMap.dcMotor.get("rotationalMotor");
+    private Arm(HardwareMap hMap) {
+        hardwareMap = hMap;
+        rotationalMotor = hardwareMap.dcMotor.get("rotationalMotor");
         extendMotor = hardwareMap.dcMotor.get("extendMotor");
 
-        //rotationalMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        //rotationalMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        rotationalMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rotationalMotor.setTargetPosition(0);
+        rotationalMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
         extendMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        //extendMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        extendMotor.setTargetPosition(0);
+        extendMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    }
+
+    public void extendToMax() {
+        extendTo(96.6);
+        extendMotor.setPower(1.);
     }
 
     public void rotateTo(double angle, boolean toNormalize) {
@@ -35,16 +44,25 @@ public class Arm {
         rotationalMotor.setTargetPosition(position);
     }
 
-    private void extendTo(double inches) {
+    private void extendTo(double cm) {
 
         // Convert angle to position
-        int position = inchesToTicks(inches);
+        int position = cmToTicks(cm);
 
         // Set Position
         extendMotor.setTargetPosition(position);
     }
-    private int inchesToTicks(double inches) {
-        double exactTicks = inches * 0; // TODO find raw ticks, then find ratio of ticks to inches
+    // Starting length = 41.15cm at 0 ticks
+    // Ending length = 96.69cm at 3300 ticks (3374 ticks is the max, but we only should extend to 96.6cm)
+    // ticks = cm * n
+    // 3300 ticks = (96.69cm - 41.15cm) * n
+    // solved for n, n = 3300/55.54
+
+    // RE-EVALUATED AT 3306 ticks = (97cm - 41.15cm) * n
+    // Corrected equation to: 3306 ticks = (97cm) * n
+    // n = 3306/97
+    private int cmToTicks(double cm) {
+        double exactTicks = cm * (3306.0 / 97);
         return (int) exactTicks;
     }
     private int angleToTicks(double angle) {
