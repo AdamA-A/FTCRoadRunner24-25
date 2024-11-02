@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 public class Arm {
     // Counts per revolution
     final double CPR = 28;
+    final public static String[] configMotorNames = {"rotationalMotor", "extendMotor"};
     public static DcMotor rotationalMotor = null;
     public static DcMotor extendMotor = null;
     private static Arm instance = null;
@@ -18,8 +19,8 @@ public class Arm {
 
     private Arm(HardwareMap hMap) {
         hardwareMap = hMap;
-        rotationalMotor = hardwareMap.dcMotor.get("rotationalMotor");
-        extendMotor = hardwareMap.dcMotor.get("extendMotor");
+        rotationalMotor = hardwareMap.dcMotor.get(Arm.configMotorNames[0]);
+        extendMotor = hardwareMap.dcMotor.get(Arm.configMotorNames[1]);
 
         rotationalMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rotationalMotor.setTargetPosition(0);
