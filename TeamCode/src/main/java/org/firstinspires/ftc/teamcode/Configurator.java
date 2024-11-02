@@ -43,6 +43,7 @@ public class Configurator extends LinearOpMode {
                 telemetry.addLine();
                 telemetry.addData(servo, exists(servo, false));
             }
+            // TODO: use telemetry.addAction to add a runnable action of saving the current configuration to a file (so find if controlhub/expansionhub), and maybe use the logging object of hardwareMap
 
             telemetry.update();
         }
@@ -53,16 +54,19 @@ public class Configurator extends LinearOpMode {
         return both;
     }
     // Tests if motor (isMotor) or servo (!isMotor) exists
-    private boolean exists(String name, boolean isMotor) {
+    private String exists(String name, boolean isMotor) {
         try {
+            int port = -1;
             if (isMotor) {
                 DcMotor testMotor = hardwareMap.dcMotor.get(name);
+                port = testMotor.getPortNumber();
             } else {
                 Servo testServo = hardwareMap.servo.get(name);
+                port = testServo.getPortNumber();;
             }
-            return true;
+            return "found at port " + port;
         } catch(Exception e) {
-            return false;
+            return "not found";
         }
     }
 }
