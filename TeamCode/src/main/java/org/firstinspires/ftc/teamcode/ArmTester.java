@@ -19,7 +19,7 @@ public class ArmTester extends LinearOpMode {
 
         while (opModeIsActive()) {
             if (gamepad1.y) {
-                arm.extendToMax();
+                arm.extendBeforeMaxBy(0);
             } else if (gamepad1.a) {
                 arm.extendMotor.setPower(1.);
                 arm.extendMotor.setTargetPosition(-250);

@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 public class Arm {
     // Counts per revolution
     final double CPR = 28;
+    final double MAX_EXTENSION_CM = 96.6;
     final public static String[] configMotorNames = {"rotationalMotor", "extendMotor"};
     public static DcMotor rotationalMotor = null;
     public static DcMotor extendMotor = null;
@@ -31,8 +32,8 @@ public class Arm {
         extendMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
     }
 
-    public void extendToMax() {
-        extendTo(96.6);
+    public void extendBeforeMaxBy(double cm) {
+        extendTo(MAX_EXTENSION_CM - cm);
         extendMotor.setPower(1.);
     }
 
