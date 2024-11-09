@@ -8,7 +8,8 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 public class Arm {
     // Counts per revolution
     final double CPR = 28;
-    final double MAX_EXTENSION_CM = 96.6;
+    final double MAX_EXTENSION_CM = 96.69 - 41.15;
+    final double MAX_EXTENSION_TICKS = 3300;
     final public static String[] configMotorNames = {"rotationalMotor", "extendMotor"};
     public static DcMotor rotationalMotor = null;
     public static DcMotor extendMotor = null;
@@ -26,15 +27,31 @@ public class Arm {
         rotationalMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rotationalMotor.setTargetPosition(0);
         rotationalMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        rotationalMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         extendMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         extendMotor.setTargetPosition(0);
         extendMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
     }
 
-    public void extendBeforeMaxBy(double cm) {
+    public void extendBeforeMaxBy(double cm, double extendPower) {
         extendTo(MAX_EXTENSION_CM - cm);
-        extendMotor.setPower(1.);
+        extendMotor.setPower(extendPower);
+    }
+
+    public void extendToPercent(double percent, double extendPower) {
+        double cm = MAX_EXTENSION_CM * percent / 100;
+        extendTo(cm);
+        extendMotor.setPower(extendPower);
+    }
+
+    private void extendTo(double cm) {
+
+        // Convert angle to position
+        int position = cmToTicks(cm);
+
+        // Set Position
+        extendMotor.setTargetPosition(position);
     }
 
     public void rotateTo(double angle, boolean toNormalize) {
@@ -46,25 +63,11 @@ public class Arm {
         rotationalMotor.setTargetPosition(position);
     }
 
-    private void extendTo(double cm) {
 
-        // Convert angle to position
-        int position = cmToTicks(cm);
-
-        // Set Position
-        extendMotor.setTargetPosition(position);
-    }
     // Starting length = 41.15cm at 0 ticks
-    // Ending length = 96.69cm at 3300 ticks (3374 ticks is the max, but we only should extend to 96.6cm)
-    // ticks = cm * n
-    // 3300 ticks = (96.69cm - 41.15cm) * n
-    // solved for n, n = 3300/55.54
-
-    // RE-EVALUATED AT 3306 ticks = (97cm - 41.15cm) * n
-    // Corrected equation to: 3306 ticks = (97cm) * n
-    // n = 3306/97
+    // Ending length = 96.69cm at 3300 ticks
     private int cmToTicks(double cm) {
-        double exactTicks = cm * (3306.0 / 97);
+        double exactTicks = cm * MAX_EXTENSION_TICKS/MAX_EXTENSION_CM;
         return (int) exactTicks;
     }
     private int angleToTicks(double angle) {
