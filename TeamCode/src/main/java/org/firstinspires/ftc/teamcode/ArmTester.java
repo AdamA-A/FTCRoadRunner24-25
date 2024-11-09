@@ -58,6 +58,7 @@ public class ArmTester extends LinearOpMode {
                     arm.rotationalMotor.setPower(-0.2);
                     arm.rotationalMotor.setTargetPosition(-1000);
                 } else {
+                    // TODO change power of 0.4 to 0, and fix brake mode; 0.4 causes motor to go in wrong direction at startup after falsifying driveMode
                     arm.rotationalMotor.setPower(0.4);
                     arm.rotationalMotor.setTargetPosition(arm.rotationalMotor.getCurrentPosition());
                 }
