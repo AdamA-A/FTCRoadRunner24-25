@@ -54,8 +54,8 @@ public class ClimbPOOOO extends LinearOpMode {
                 climbRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 climbLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-                climbRight.setPower(1.0);
-                climbLeft.setPower(1.0);
+                climbRight.setPower(-1.0);
+                climbLeft.setPower(-1.0);
 
             } else if (gamepad1.b) {
                 // Button B: Climbing Action
@@ -69,8 +69,8 @@ public class ClimbPOOOO extends LinearOpMode {
                 climbRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 climbLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-                climbRight.setPower(-1.0);
-                climbLeft.setPower(-1.0);
+                climbRight.setPower(1.0);
+                climbLeft.setPower(1.0);
 
             } else {
                 // Stop motors if no buttons are pressed
