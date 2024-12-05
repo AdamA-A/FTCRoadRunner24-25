@@ -42,22 +42,114 @@ public class INTAKE_CLIMB extends LinearOpMode {
                 intakeRight.setPower(0.0);
             }
 
-            // Arm Controls
-            // Extend Arm to 90% when holding `Y`, retract to 0% when `X` is pressed
-            if (gamepad1.y) {
-                arm.extendToPercent(90, 1.0); // Extend to 90% at full power
-            } else if (gamepad1.x) {
-                arm.extendToPercent(0, -1.0); // Retract to 0% at full power
+            // Arm Sequence for 40% Extension and Intake
+            if (gamepad1.a && gamepad1.b) {
+                // Keep arm rotation at 0
+                arm.rotateToPosition(0, 1.0);
+                while (arm.isRotating()) {
+                    idle(); // Wait until rotation completes
+                }
+
+                // Extend arm to 40%
+                arm.extendToPercent(40, 1.0);
+                while (arm.isExtending()) {
+                    idle(); // Wait until extension completes
+                }
+
+                // Start intake
+                intakeLeft.setPower(1.0);
+                intakeRight.setPower(-1.0);
+
+                // Wait for Gamepad 2's `B` to stop intake and retract arm
+                while (!gamepad2.b && opModeIsActive()) {
+                    telemetry.addData("Waiting for Gamepad 2 B", true);
+                    telemetry.update();
+                    idle();
+                }
+
+                // Stop intake
+                intakeLeft.setPower(0.0);
+                intakeRight.setPower(0.0);
+
+                // Retract arm to 0
+                arm.extendToPercent(0, -1.0);
+                while (arm.isExtending()) {
+                    idle(); // Wait until retraction completes
+                }
+
+                // Hold arm at 0 rotation
+                arm.holdPosition();
             }
 
-            // Rotate Arm based on button input
-            if (gamepad1.a) {
-                arm.rotateToPosition(0, 1.); // Rotate to rest
-            } else if (gamepad1.b) {
-                arm.rotateToPosition(-50, -1.); // Rotate bucket scoring position
-            } else {
-                arm.holdPosition(); // Hold rotational position when no input
+
+            if (gamepad1.a && gamepad1.y) {
+                // Rotate arm
+                arm.rotateToPosition(50, 1.0); // Adjust rotation position as needed
+                while (arm.isRotating()) {
+                    idle(); // Wait until rotation is complete
+                }
+
+                // Extend arm to 90%
+                arm.extendToPercent(90, 1.0);
+                while (arm.isExtending()) {
+                    idle(); // Wait until extension is complete
+                }
+
+                // Start outtake at 0.25 speed
+                intakeLeft.setPower(-0.25);
+                intakeRight.setPower(0.25);
+
+                // Hold arm's position until Gamepad 2's B is pressed
+                while (!gamepad2.b && opModeIsActive()) {
+                    telemetry.addData("Outtaking...", true);
+                    telemetry.addData("Waiting for Gamepad 2 B", true);
+                    telemetry.update();
+                    idle();
+                }
+
+                // Stop outtake
+                intakeLeft.setPower(0.0);
+                intakeRight.setPower(0.0);
+
+                // Retract sequence
+                arm.rotateToPosition(0, 1.0); // Rotate back to 0
+                while (arm.isRotating()) {
+                    idle(); // Wait until rotation is complete
+                }
+
+                arm.extendToPercent(0, -1.0); // Retract to 0
+                while (arm.isExtending()) {
+                    idle(); // Wait until retraction is complete
+                }
+
+                // Hold position at 0 rotation
+                arm.holdPosition();
             }
+
+            if (gamepad1.a && gamepad1.y) {
+                // Rotate first
+                arm.rotateToPosition(-50, 1.0); // Rotate bucket scoring position
+                while (arm.isRotating()) {
+                    // Wait until rotation completes
+                    idle();
+                }
+
+                // Then extend
+                arm.extendToPercent(90, 1.0); // Extend to 90%
+                while (arm.isExtending()) {
+                    // Wait until extension completes
+                    idle();
+                }
+
+                // Outtake at 0.25 speed
+                intakeLeft.setPower(0.25);
+                intakeRight.setPower(-0.25);
+
+                // Hold the position
+                arm.holdPosition();
+            }
+
+
 
             // Telemetry for debugging
             telemetry.addData("Intake Left Power", intakeLeft.getPower());
@@ -119,6 +211,14 @@ public class INTAKE_CLIMB extends LinearOpMode {
 
         public int getPivotPosition() {
             return rotationalMotor.getCurrentPosition();
+        }
+
+        public boolean isRotating() {
+            return rotationalMotor.isBusy();
+        }
+
+        public boolean isExtending() {
+            return extendMotor.isBusy();
         }
     }
 }
