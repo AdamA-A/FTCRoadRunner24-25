@@ -2,18 +2,21 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-@TeleOp(name = "Combined Arm and Intake", group = "Test")
-public class INTAKE_CLIMB extends LinearOpMode {
+@TeleOp(name = "Integrated TeleOp with Field-Centric Drive", group = "TeleOp")
+public class IntegratedTeleOp extends LinearOpMode {
 
     private CRServo intakeLeft;
     private CRServo intakeRight;
     private Servo wrist;
     private Arm arm;
+    private IMU imu;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -25,131 +28,117 @@ public class INTAKE_CLIMB extends LinearOpMode {
         // Initialize the Arm subsystem
         arm = Arm.getInstance(hardwareMap);
 
+        // Initialize the IMU for field-centric driving
+        imu = hardwareMap.get(IMU.class, "imu");
+        IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
+                RevHubOrientationOnRobot.LogoFacingDirection.UP,
+                RevHubOrientationOnRobot.UsbFacingDirection.FORWARD));
+        imu.initialize(parameters);
+
+        // Initialize drive motors
+        DcMotor frontLeftMotor = hardwareMap.dcMotor.get("frontLeftMotor");
+        DcMotor backLeftMotor = hardwareMap.dcMotor.get("backLeftMotor");
+        DcMotor frontRightMotor = hardwareMap.dcMotor.get("frontRightMotor");
+        DcMotor backRightMotor = hardwareMap.dcMotor.get("backRightMotor");
+
+        // Reverse right-side motors
+        frontRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        backRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+
         waitForStart();
 
         while (opModeIsActive()) {
-            // Intake Controls
-            if (gamepad1.left_bumper) {
-                intakeLeft.setPower(1.0);
-                intakeRight.setPower(-1.0);
-                wrist.setPosition(0.0); // Adjust wrist position as needed
-            } else if (gamepad1.right_bumper) {
-                intakeLeft.setPower(-1.0);
-                intakeRight.setPower(1.0);
-                wrist.setPosition(1.0); // Adjust wrist position as needed
-            } else {
-                intakeLeft.setPower(0.0);
-                intakeRight.setPower(0.0);
+            // Field-centric mecanum drive
+            double y = -gamepad1.left_stick_y; // Y is reversed
+            double x = gamepad1.left_stick_x * 1.1; // Counteract imperfect strafing
+            double rx = gamepad1.right_stick_x;
+
+            if (gamepad1.options) {
+                imu.resetYaw();
             }
 
-            // Arm Sequence for 40% Extension and Intake
-            if (gamepad1.a && gamepad1.b) {
-                // Keep arm rotation at 0
-                //arm.rotateToPosition(0, 1.0);
-                //while (arm.isRotating()) {
-                //  idle(); // Wait until rotation completes
-                //}
+            double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
 
-                // Extend arm to 40%
-                arm.extendToPercent(40, 1.0);
-                while (arm.isExtending()) {
-                    idle(); // Wait until extension completes
-                }
+            // Rotate joystick inputs by the robot's heading
+            double rotX = x * Math.cos(-botHeading) - y * Math.sin(-botHeading);
+            double rotY = x * Math.sin(-botHeading) + y * Math.cos(-botHeading);
+
+            double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(rx), 1);
+            double frontLeftPower = (rotY + rotX + rx) / denominator;
+            double backLeftPower = (rotY - rotX + rx) / denominator;
+            double frontRightPower = (rotY - rotX - rx) / denominator;
+            double backRightPower = (rotY + rotX - rx) / denominator;
+
+            frontLeftMotor.setPower(frontLeftPower);
+            backLeftMotor.setPower(backLeftPower);
+            frontRightMotor.setPower(frontRightPower);
+            backRightMotor.setPower(backRightPower);
+
+            // A + B Button: Extend to 40%, Intake, Retract
+            if (gamepad1.a && gamepad1.b) {
+                arm.extendToPercentPID(40); // Extend arm to 40%
 
                 // Start intake
                 intakeLeft.setPower(-1.0);
                 intakeRight.setPower(1.0);
 
-                // Wait for Gamepad 2's `B` to stop intake and retract arm
+                // Wait for Gamepad 2's B button to stop intake and retract
                 while (!gamepad2.b && opModeIsActive()) {
                     telemetry.addData("Waiting for Gamepad 2 B", true);
                     telemetry.update();
                     idle();
                 }
 
-                // Stop intake
-                wrist.setPosition(0.);
                 intakeLeft.setPower(0.0);
                 intakeRight.setPower(0.0);
-                //wrist.setPosition(.5);
 
-                // Retract arm to 0
-                arm.extendToPercent(0, -1.0);
-                while (arm.isExtending()) {
-                    idle(); // Wait until retraction completes
-                }
-
-                // Hold arm at 0 rotation
-                arm.holdPosition();
+                // Retract arm
+                arm.extendToPercentPID(0);
             }
 
-
-
-
+            // Y Button: Rotate, Extend, Outtake, Retract
             if (gamepad1.y) {
-                // Rotate arm
-                arm.rotateToPosition(-700, -1.0); // Adjust rotation position as needed
-                while (arm.isRotating()) {
-                    idle(); // Wait until rotation is complete
-                }
+                arm.rotateToPositionPID(-700); // Rotate arm to position
+                arm.extendToPercentPID(90);   // Extend arm to 90%
 
-                // Extend arm to 90%
-                arm.extendToPercent(0, 1.0);
-                while (arm.isExtending()) {
-                    idle(); // Wait until extension is complete
-                }
-
-                // Start outtake at 0.25 speed
-                wrist.setPosition(.0);
+                // Outtake
+                wrist.setPosition(0.0);
                 intakeLeft.setPower(-0.25);
                 intakeRight.setPower(0.25);
 
-
-                // Hold arm's position until Gamepad 2's B is pressed
+                // Wait for Gamepad 2's B button to stop outtake
                 while (!gamepad2.b && opModeIsActive()) {
                     telemetry.addData("Outtaking...", true);
-                    telemetry.addData("Waiting for Gamepad 2 B", true);
                     telemetry.update();
                     idle();
                 }
 
-                // Stop outtake
-                wrist.setPosition(1.0);
                 intakeLeft.setPower(0.0);
                 intakeRight.setPower(0.0);
+                wrist.setPosition(1.0);
 
                 // Retract sequence
-                arm.rotateToPosition(0, .15); // Rotate back to 0
-                while (arm.isRotating()) {
-                    idle(); // Wait until rotation is complete
-                }
-
-                arm.extendToPercent(0, -1.0); // Retract to 0
-                while (arm.isExtending()) {
-                    idle(); // Wait until retraction is complete
-                }
-
-                // Hold position at 0 rotation
-                arm.holdPosition();
+                arm.rotateToPositionPID(0);
+                arm.extendToPercentPID(0);
             }
 
-
-
-            // Telemetry for debugging
+            // Telemetry
+            telemetry.addData("Heading (deg)", Math.toDegrees(botHeading));
             telemetry.addData("Intake Left Power", intakeLeft.getPower());
             telemetry.addData("Intake Right Power", intakeRight.getPower());
             telemetry.addData("Wrist Position", wrist.getPosition());
-            telemetry.addData("EXTEND Position", arm.getExtendPosition());
-            telemetry.addData("PIVOT Position", arm.getPivotPosition());
+            telemetry.addData("Arm Extend Pos", arm.getExtendPosition());
+            telemetry.addData("Arm Pivot Pos", arm.getPivotPosition());
             telemetry.update();
         }
     }
 
-    // Define the Arm class
     public static class Arm {
         private DcMotor rotationalMotor;
         private DcMotor extendMotor;
         private static Arm instance;
+
+        private static final double KP = 0.01, KI = 0.0001, KD = 0.005;
 
         private Arm(HardwareMap hardwareMap) {
             rotationalMotor = hardwareMap.dcMotor.get("rotationalMotor");
@@ -173,20 +162,42 @@ public class INTAKE_CLIMB extends LinearOpMode {
             return instance;
         }
 
-        public void extendToPercent(double percent, double power) {
-            int targetPosition = (int) (percent / 100 * 3300); // Assuming 3300 ticks is 100%
-            extendMotor.setTargetPosition(targetPosition);
-            extendMotor.setPower(power);
+        public void extendToPercentPID(double percent) {
+            int targetPosition = (int) (percent / 100 * 3300); // Assuming 3300 ticks is max
+            pidControl(extendMotor, targetPosition);
         }
 
-        public void rotateToPosition(int position, double power) {
-            rotationalMotor.setTargetPosition(position);
-            rotationalMotor.setPower(power);
+        public void rotateToPositionPID(int targetPosition) {
+            pidControl(rotationalMotor, targetPosition);
         }
 
-        public void holdPosition() {
-            rotationalMotor.setTargetPosition(rotationalMotor.getCurrentPosition());
-            rotationalMotor.setPower(0.1); // Low power to hold position
+        private void pidControl(DcMotor motor, int targetPosition) {
+            double integral = 0, previousError = 0;
+            motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+            while (opModeIsActive()) {
+                int currentPosition = motor.getCurrentPosition();
+                double error = targetPosition - currentPosition;
+                integral += error;
+                double derivative = error - previousError;
+
+                double power = KP * error + KI * integral + KD * derivative;
+                motor.setPower(Math.max(-1.0, Math.min(1.0, power))); // Clamp power
+                previousError = error;
+
+                if (Math.abs(error) < 10) { // Close enough
+                    motor.setPower(0);
+                    break;
+                }
+
+                telemetry.addData("Motor Target", targetPosition);
+                telemetry.addData("Motor Current", currentPosition);
+                telemetry.addData("Motor Error", error);
+                telemetry.addData("Motor Power", power);
+                telemetry.update();
+            }
+
+            motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         }
 
         public int getExtendPosition() {
@@ -195,14 +206,6 @@ public class INTAKE_CLIMB extends LinearOpMode {
 
         public int getPivotPosition() {
             return rotationalMotor.getCurrentPosition();
-        }
-
-        public boolean isRotating() {
-            return rotationalMotor.isBusy();
-        }
-
-        public boolean isExtending() {
-            return extendMotor.isBusy();
         }
     }
 }
