@@ -45,10 +45,10 @@ public class INTAKE_CLIMB extends LinearOpMode {
             // Arm Sequence for 40% Extension and Intake
             if (gamepad1.a && gamepad1.b) {
                 // Keep arm rotation at 0
-                arm.rotateToPosition(0, 1.0);
-                while (arm.isRotating()) {
-                    idle(); // Wait until rotation completes
-                }
+                //arm.rotateToPosition(0, 1.0);
+                //while (arm.isRotating()) {
+                //  idle(); // Wait until rotation completes
+                //}
 
                 // Extend arm to 40%
                 arm.extendToPercent(40, 1.0);
@@ -57,8 +57,8 @@ public class INTAKE_CLIMB extends LinearOpMode {
                 }
 
                 // Start intake
-                intakeLeft.setPower(1.0);
-                intakeRight.setPower(-1.0);
+                intakeLeft.setPower(-1.0);
+                intakeRight.setPower(1.0);
 
                 // Wait for Gamepad 2's `B` to stop intake and retract arm
                 while (!gamepad2.b && opModeIsActive()) {
@@ -68,8 +68,10 @@ public class INTAKE_CLIMB extends LinearOpMode {
                 }
 
                 // Stop intake
+                wrist.setPosition(0.);
                 intakeLeft.setPower(0.0);
                 intakeRight.setPower(0.0);
+                //wrist.setPosition(.5);
 
                 // Retract arm to 0
                 arm.extendToPercent(0, -1.0);
@@ -82,22 +84,26 @@ public class INTAKE_CLIMB extends LinearOpMode {
             }
 
 
-            if (gamepad1.a && gamepad1.y) {
+
+
+            if (gamepad1.y) {
                 // Rotate arm
-                arm.rotateToPosition(50, 1.0); // Adjust rotation position as needed
+                arm.rotateToPosition(-700, -1.0); // Adjust rotation position as needed
                 while (arm.isRotating()) {
                     idle(); // Wait until rotation is complete
                 }
 
                 // Extend arm to 90%
-                arm.extendToPercent(90, 1.0);
+                arm.extendToPercent(0, 1.0);
                 while (arm.isExtending()) {
                     idle(); // Wait until extension is complete
                 }
 
                 // Start outtake at 0.25 speed
+                wrist.setPosition(.0);
                 intakeLeft.setPower(-0.25);
                 intakeRight.setPower(0.25);
+
 
                 // Hold arm's position until Gamepad 2's B is pressed
                 while (!gamepad2.b && opModeIsActive()) {
@@ -108,11 +114,12 @@ public class INTAKE_CLIMB extends LinearOpMode {
                 }
 
                 // Stop outtake
+                wrist.setPosition(1.0);
                 intakeLeft.setPower(0.0);
                 intakeRight.setPower(0.0);
 
                 // Retract sequence
-                arm.rotateToPosition(0, 1.0); // Rotate back to 0
+                arm.rotateToPosition(0, .15); // Rotate back to 0
                 while (arm.isRotating()) {
                     idle(); // Wait until rotation is complete
                 }
@@ -123,29 +130,6 @@ public class INTAKE_CLIMB extends LinearOpMode {
                 }
 
                 // Hold position at 0 rotation
-                arm.holdPosition();
-            }
-
-            if (gamepad1.a && gamepad1.y) {
-                // Rotate first
-                arm.rotateToPosition(-50, 1.0); // Rotate bucket scoring position
-                while (arm.isRotating()) {
-                    // Wait until rotation completes
-                    idle();
-                }
-
-                // Then extend
-                arm.extendToPercent(90, 1.0); // Extend to 90%
-                while (arm.isExtending()) {
-                    // Wait until extension completes
-                    idle();
-                }
-
-                // Outtake at 0.25 speed
-                intakeLeft.setPower(0.25);
-                intakeRight.setPower(-0.25);
-
-                // Hold the position
                 arm.holdPosition();
             }
 
