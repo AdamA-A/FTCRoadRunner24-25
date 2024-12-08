@@ -28,6 +28,8 @@ public class Adam extends LinearOpMode {
         waitForStart();
         if (isStopRequested()) return;
         while (opModeIsActive()) {
+            telemetry.addLine(frontLeftMotor.getConnectionInfo());
+            telemetry.update();
             // Drive control
             double y = -gamepad1.left_stick_y; // Y stick is reversed
             double x = gamepad1.left_stick_x * 1.1; // Counteract imperfect strafing

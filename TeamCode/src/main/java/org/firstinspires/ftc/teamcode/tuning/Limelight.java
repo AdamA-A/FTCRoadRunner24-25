@@ -25,7 +25,8 @@ public class Limelight extends LinearOpMode {
     int tagId = -1; //Tag ID that we looking for; Set to -1 for ANY tag
     public void runOpMode() throws  InterruptedException {
         try {
-            limelight = hardwareMap.get(Limelight3A.class, "Ethernet Device");
+            //limelight = hardwareMap.get(Limelight3A.class, "Ethernet Device");
+
         } catch(Exception e) {
             telemetry.addLine("String is null");
         }
