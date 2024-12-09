@@ -26,7 +26,6 @@ public class ArmTester extends LinearOpMode {
             // Add current runtime
             double now = getRuntime();
             telemetry.addData("Runtime", now);
-
             // Gamepad1's y is the switch for runtime
             if (gamepad1.y && lastY == false) {
                 lastY = true;
