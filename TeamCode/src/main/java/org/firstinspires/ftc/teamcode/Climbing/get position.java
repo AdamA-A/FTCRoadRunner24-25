@@ -17,6 +17,15 @@ public class DRIVE extends LinearOpMode {
     private Servo wrist;
     private Arm arm;
 
+    // States for the control logic
+    private enum ArmState {
+        IDLE,
+        PICKING,
+        OUTTAKING
+    }
+
+    private ArmState armState = ArmState.IDLE;
+
     @Override
     public void runOpMode() throws InterruptedException {
         // Initialize motors and servos
@@ -50,8 +59,7 @@ public class DRIVE extends LinearOpMode {
             double x = gamepad1.left_stick_x;  // Strafing
             double rx = gamepad1.right_stick_x; // Rotation
 
-            if (gamepad1.options) imu.r
-        esetYaw();
+            if (gamepad1.options) imu.resetYaw();
 
             double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
 
@@ -71,68 +79,68 @@ public class DRIVE extends LinearOpMode {
             frontRightMotor.setPower(frontRightPower);
             backRightMotor.setPower(backRightPower);
 
-            // Intake controls (gamepad1.left_bumper, gamepad1.right_bumper)
-            if (gamepad1.left_bumper) {
-                intakeLeft.setPower(1.0);
-                intakeRight.setPower(-1.0);
-                wrist.setPosition(0.0);
-            } else if (gamepad1.right_bumper) {
-                intakeLeft.setPower(-1.0);
-                intakeRight.setPower(1.0);
-                wrist.setPosition(1.0);
-            } else {
-                intakeLeft.setPower(0.0);
-                intakeRight.setPower(0.0);
-            }
+            // Handle arm state machine
+            switch (armState) {
+                case IDLE:
+                    // Intake controls
+                    if (gamepad1.left_bumper) {
+                        intakeLeft.setPower(1.0);
+                        intakeRight.setPower(-1.0);
+                        wrist.setPosition(0.0);
+                    } else if (gamepad1.right_bumper) {
+                        intakeLeft.setPower(-1.0);
+                        intakeRight.setPower(1.0);
+                        wrist.setPosition(1.0);
+                    } else {
+                        intakeLeft.setPower(0.0);
+                        intakeRight.setPower(0.0);
+                    }
 
-            // Arm control with gamepad1.a + gamepad1.b
-            if (gamepad1.a && gamepad1.b) {
-                arm.extendToPercentPID(20, 0.5);
-                while (!gamepad2.b && opModeIsActive()) {
-                    telemetry.addData("Waiting for Gamepad 2 B", true);
-                    telemetry.update();
-                    idle();
-                }
+                    // Transition to PICKING state
+                    if (gamepad1.x) {
+                        armState = ArmState.PICKING;
+                        arm.extendToPercentPID(20, 0.5);
+                    }
 
-                wrist.setPosition(.5);
-                intakeLeft.setPower(-1.0);
-                intakeRight.setPower(1.0);
+                    // Transition to OUTTAKING state
+                    if (gamepad1.y) {
+                        armState = ArmState.OUTTAKING;
+                        arm.rotateToPositionPID(-100, -0.7);
+                        arm.extendToPercentPID(40, 0.5);
+                    }
+                    break;
 
-                while (!gamepad2.a && opModeIsActive()) {
-                    telemetry.addData("Waiting for Gamepad 2 B", true);
-                    telemetry.update();
-                    idle();
-                }
+                case PICKING:
+                    wrist.setPosition(0.5);
+                    intakeLeft.setPower(-1.0);
+                    intakeRight.setPower(1.0);
 
-                intakeLeft.setPower(0.0);
-                intakeRight.setPower(0.0);
-                arm.extendToPercentPID(1, -0.5);
-            }
+                    if (gamepad2.b) {
+                        intakeLeft.setPower(0.0);
+                        intakeRight.setPower(0.0);
+                        arm.extendToPercentPID(1, -0.5);
+                        armState = ArmState.IDLE;
+                    }
+                    break;
 
-            // Arm sequence with gamepad1.y
-            if (gamepad1.y) {
-                arm.rotateToPositionPID(-100, -0.7);
-                arm.extendToPercentPID(40, 0.5);
+                case OUTTAKING:
+                    wrist.setPosition(0.0);
+                    intakeLeft.setPower(-0.25);
+                    intakeRight.setPower(0.25);
 
-                wrist.setPosition(0.0);
-                intakeLeft.setPower(-0.25);
-                intakeRight.setPower(0.25);
-
-                while (!gamepad2.b && opModeIsActive()) {
-                    telemetry.addData("Outtaking...", true);
-                    telemetry.update();
-                    idle();
-                }
-
-                intakeLeft.setPower(0.0);
-                intakeRight.setPower(0.0);
-                wrist.setPosition(1.0);
-
-                arm.rotateToPositionPID(0, 0.7);
-                arm.extendToPercentPID(0, 0.5);
+                    if (gamepad2.b) {
+                        intakeLeft.setPower(0.0);
+                        intakeRight.setPower(0.0);
+                        wrist.setPosition(1.0);
+                        arm.rotateToPositionPID(, 0.7);
+                        arm.extendToPercentPID(1, 0.5);
+                        armState = ArmState.IDLE;
+                    }
+                    break;
             }
 
             // Debugging telemetry
+            telemetry.addData("State", armState);
             telemetry.addData("Left Power", frontLeftPower);
             telemetry.addData("Right Power", frontRightPower);
             telemetry.addData("Wrist Position", wrist.getPosition());
