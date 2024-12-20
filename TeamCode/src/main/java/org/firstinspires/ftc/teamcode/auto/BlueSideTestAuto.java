@@ -81,7 +81,8 @@ public class BlueSideTestAuto extends LinearOpMode {
 
     public class Claw {
         private Servo claw;
-
+        //The claw motor is separated into 2 parts which named: intakeLeft (port 1) and intakeRight(port 2)
+        //TODO : Combined those 2 or separate the claw motor into 2.
         public Claw(HardwareMap hardwareMap) {
             claw = hardwareMap.get(Servo.class, "claw");
         }
